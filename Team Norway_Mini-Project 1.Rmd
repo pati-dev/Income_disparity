@@ -9,9 +9,10 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE, tidy = TRUE)
 library(tidyverse)
 library(foreign)
+library(data.table)
 ```
 
-# Solution 3
+# Solution 3: Correlation b/w mean income and top/bottom ventiles
 
 Load the data:
 ```{r}
@@ -19,11 +20,23 @@ ventile = read.dta("ventile_2011_for_release_LCU.dta")
 summary(ventile)
 ```
 
+Compute % income share of top ventile and average income for each country
 ```{r}
-# ventile.test = aggregate(year_survey ~ contcod, FUN = function(x) length(unique(x)), data = ventile)
-ventile.top5 = ventile[ventile$ventile == 20, c("contcod", "ventile_income")]
-ventile.mean = aggregate(ventile_income ~ contcod, sum, data = ventile)
-ventile.top5 <- merge(ventile.top5, ventile.mean, by = "contcod", all.x = TRUE)
-colnames(ventile.top5) = c("contcod", "income.top5" ,"income.mean")
-ventile.top5$income.perc_share = ventile.top5$income.top5 * 100 / ventile.top5$income.mean
+ventile.dt = data.table(ventile)
+setkey(ventile.dt, ventile)
+# tables()
+ventile.top5 = ventile.dt[ .(20), list(totpop, top5_income = ventile_income * pop), by = contcod ]
+ventile.tot = ventile.dt[, list( tot_income = sum(ventile_income * pop) ), by = contcod ]
+ventile.top5 <- merge(ventile.top5, ventile.tot, by = "contcod", all.x = TRUE)
+
+ventile.top5$perc_share = ventile.top5$top5_income * 100 / ventile.top5$tot_income
+ventile.top5$avg_income = ventile.top5$tot_income / ventile.top5$totpop
+summary(ventile.top5)
 ```
+
+Plot % income share of top ventile against average income
+```{r}
+ggplot(ventile.top5, aes(x = perc_share, avg_income)) +
+  geom_point()
+```
+
