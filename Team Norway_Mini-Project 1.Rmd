@@ -1,0 +1,29 @@
+---
+title: "Mini-Project 1_Team Norway"
+author: "Ankit Mathur"
+date: "1/31/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, tidy = TRUE)
+library(tidyverse)
+library(foreign)
+```
+
+# Solution 3
+
+Load the data:
+```{r}
+ventile = read.dta("ventile_2011_for_release_LCU.dta")
+summary(ventile)
+```
+
+```{r}
+# ventile.test = aggregate(year_survey ~ contcod, FUN = function(x) length(unique(x)), data = ventile)
+ventile.top5 = ventile[ventile$ventile == 20, c("contcod", "ventile_income")]
+ventile.mean = aggregate(ventile_income ~ contcod, sum, data = ventile)
+ventile.top5 <- merge(ventile.top5, ventile.mean, by = "contcod", all.x = TRUE)
+colnames(ventile.top5) = c("contcod", "income.top5" ,"income.mean")
+ventile.top5$income.perc_share = ventile.top5$income.top5 * 100 / ventile.top5$income.mean
+```
