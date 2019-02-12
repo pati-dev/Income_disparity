@@ -12,31 +12,48 @@ library(foreign)
 library(data.table)
 ```
 
-# Solution 3: Correlation b/w mean income and top/bottom ventiles
+# Correlation b/w mean income and top/bottom ventiles
 
-Load the data:
-```{r}
+Load the data
+```{r, include=FALSE}
 ventile = read.dta("ventile_2011_for_release_LCU.dta")
-summary(ventile)
+conv = read.csv("curr_conv.csv", stringsAsFactors = FALSE)
+# summary(ventile)
+# summary(conv)
 ```
 
-Compute % income share of top ventile and average income for each country
-```{r}
-ventile.dt = data.table(ventile)
-setkey(ventile.dt, ventile)
-# tables()
-ventile.top5 = ventile.dt[ .(20), list(totpop, top5_income = ventile_income * pop), by = contcod ]
-ventile.tot = ventile.dt[, list( tot_income = sum(ventile_income * pop) ), by = contcod ]
-ventile.top5 <- merge(ventile.top5, ventile.tot, by = "contcod", all.x = TRUE)
 
-ventile.top5$perc_share = ventile.top5$top5_income * 100 / ventile.top5$tot_income
-ventile.top5$avg_income = ventile.top5$tot_income / ventile.top5$totpop
-summary(ventile.top5)
+```{r}
+data_prep <- function(ventile.adj, v) {
+  # Convert all local currencies to corresponding USD 2012 dollars (not adjusted for inflation)
+  ventile.adj <- merge(ventile, conv, by = "contcod", all.x = TRUE)
+  ventile.adj$ventile_income_adj = ventile.adj$ventile_income * ventile.adj$conv_fac
+  ventile.adj$continent <- replace_na(ventile.adj$continent, "NA")
+  
+  # Compute % income share of top ventile and average income for each country
+  ventile.dt = data.table(ventile.adj)
+  setkey(ventile.dt, ventile)
+  ventile.v = ventile.dt[ .(v), list(totpop, v_income = ventile_income_adj * pop), by = contcod ]
+  ventile.tot = ventile.dt[, list( tot_income = sum(ventile_income_adj * pop) ), by = contcod ]
+  ventile.v <- merge(ventile.v, ventile.tot, by = "contcod", all.x = TRUE)
+  
+  ventile.v$perc_share = ventile.v$v_income * 100 / ventile.v$tot_income
+  ventile.v$avg_income = ventile.v$tot_income / ventile.v$totpop
+  return(ventile.v)
+}
 ```
 
 Plot % income share of top ventile against average income
 ```{r}
-ggplot(ventile.top5, aes(x = perc_share, avg_income)) +
-  geom_point()
+ventile.top5.mean = aggregate(avg_income ~ perc_share, mean, data = ventile.top5)
+ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(aes(fill = "Trend"), color = "#56B4E9", se = FALSE) +
+  ylab("Average income") +
+  xlab("% income share") +
+  ggtitle("Income share of top 5% individuals by mean income of country") +
+  labs(subtitle = "N = 72") +
+  scale_fill_manual(name = "", values = c("Trend" = "#56B4E9")) +
+  theme(legend.position = "bottom")
 ```
 
