@@ -1,6 +1,6 @@
 ---
 title: "Mini-Project 1_Team Norway"
-author: "Ankit Mathur"
+author: "Ankit Mathur, Nitesh Jaswal, Akshay Rathi"
 date: "1/31/2019"
 output: html_document
 ---
@@ -44,7 +44,7 @@ plot_v <- function(ventile, v) {
 Plots for top 5%:
 ```{r}
 ventile.top5 = plot_v(ventile.adj, 20)
-# Plot % income share of top ventile against average income
+
 ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", aes(fill = "Trend"), color = "#009E73", se = FALSE) +
@@ -78,6 +78,7 @@ ggplot(ventile.top5.lm.df, aes(x = perc_share, y = .resid)) +
 Plots for bottom 5%:
 ```{r}
 ventile.bottom5 = plot_v(ventile.adj, 1)
+
 ggplot(ventile.bottom5, aes(x = perc_share, y = avg_income)) +
   geom_point(alpha = 0.2) +
   geom_smooth(method = "lm", aes(fill = "Trend"), color = "#E69F00", se = FALSE) +
