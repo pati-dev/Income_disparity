@@ -23,6 +23,8 @@ conv = read.csv("curr_conv.csv", stringsAsFactors = FALSE)
 ventile.adj <- merge(ventile, conv, by = "contcod", all.x = TRUE)
 ventile.adj$ventile_income_adj = ventile.adj$ventile_income * ventile.adj$conv_fac
 ventile.adj$continent <- replace_na(ventile.adj$continent, "NA")
+ventile.adj$continent <- as.factor(ventile.adj$continent)
+levels(ventile.adj$continent) <- c("Africa", "Asia", "Europe", "North America", "Oceania", "South America")
 
 # Create a function to produce % shares and mean incomes for a given ventile for all countries
 plot_v <- function(ventile, v) {
@@ -38,35 +40,37 @@ plot_v <- function(ventile, v) {
 }
 ```
 
-
+Plots for top 5%
 ```{r}
-# NA
-
-# Plots for top 5%
 ventile.top5 = plot_v(ventile.adj, 20)
 # Plot % income share of top ventile against average income
 ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
   geom_point(alpha = 0.2) +
-  geom_smooth(method = "gam", aes(fill = "Trend"), color = "#009E73", se = FALSE) +
+  geom_smooth(method = "lm", aes(fill = "Trend"), color = "#009E73", se = FALSE) +
   facet_wrap(~ continent) +
-  ylab("Average income") +
+  ylab("Mean income \n(equivalent to 2012 USD)") +
   xlab("% income share") +
-  ggtitle("Variation of mean incomes of countries by % share of income held by \nthe top 5% individuals in 111 countries") +
-  labs(subtitle = "N = 111") +
+  ggtitle("Variation of mean incomes of countries by %age share of income held by \nthe top 5% individuals") +
+  labs(subtitle = "Based upon data maintained by Branko Milanovic of the Stone Center on \nSocioEconomic Inequality for 111 countries") +
   scale_fill_manual(name = "", values = c("Trend" = "#009E73")) +
   theme(legend.position = "bottom")
+```
 
-# Plots for bottom 5%
+Mean income of countries in Asia, Africa, and South America, all of which have relatively low GDP per capita, does not vary with the %age share of income held by the top 5% individuals. However, the mean income of countries in North America and Europe, both of which have much higher GDP per capita, does tend to decrease as the %age share of income held by the top 5% segment increases. This negative correlation is much sharper in North America than in Europe owing to United States and Canada, both of which have much higher average income than the rest of the countries in North America.
+
+Plots for bottom 5%
+```{r}
 ventile.bottom5 = plot_v(ventile.adj, 1)
 ggplot(ventile.bottom5, aes(x = perc_share, y = avg_income)) +
   geom_point(alpha = 0.2) +
-  geom_smooth(method = "gam", aes(fill = "Trend"), color = "#E69F00", se = FALSE) +
+  geom_smooth(method = "lm", aes(fill = "Trend"), color = "#E69F00", se = FALSE) +
   # facet_wrap(~ continent) +
-  ylab("Average income \n(equivalent to 2012 USD)") +
+  ylab("Mean income \n(equivalent to 2012 USD)") +
   xlab("% income share") +
-  ggtitle("Variation of mean country income by % share of income held by \nthe bottom 5% individuals in 111 countries") +
-  labs(subtitle = "N = 111") +
+  ggtitle("Variation of mean incomes of countries by %age share of income held by \nthe bottom 5% individuals") +
+  labs(subtitle = "Based upon data maintained by Branko Milanovic of the Stone Center on \nSocioEconomic Inequality for 111 countries") +
   scale_fill_manual(name = "", values = c("Trend" = "#E69F00")) +
   theme(legend.position = "bottom")
 ```
 
+Shares of incomes of the bottom 5% individuals have no effect whatsoever on the mean incomes of countries.
