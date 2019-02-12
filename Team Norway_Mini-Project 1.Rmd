@@ -14,27 +14,22 @@ library(data.table)
 
 # Correlation b/w mean income and top/bottom ventiles
 
-Load the data
 ```{r, include=FALSE}
+# Load the data
 ventile = read.dta("ventile_2011_for_release_LCU.dta")
 conv = read.csv("curr_conv.csv", stringsAsFactors = FALSE)
-# summary(ventile)
-# summary(conv)
-```
 
+# Convert all local currencies to corresponding USD 2012 dollars (not adjusted for inflation)
+ventile.adj <- merge(ventile, conv, by = "contcod", all.x = TRUE)
+ventile.adj$ventile_income_adj = ventile.adj$ventile_income * ventile.adj$conv_fac
+ventile.adj$continent <- replace_na(ventile.adj$continent, "NA")
 
-```{r}
-data_prep <- function(ventile.adj, v) {
-  # Convert all local currencies to corresponding USD 2012 dollars (not adjusted for inflation)
-  ventile.adj <- merge(ventile, conv, by = "contcod", all.x = TRUE)
-  ventile.adj$ventile_income_adj = ventile.adj$ventile_income * ventile.adj$conv_fac
-  ventile.adj$continent <- replace_na(ventile.adj$continent, "NA")
-  
-  # Compute % income share of top ventile and average income for each country
-  ventile.dt = data.table(ventile.adj)
+# Create a function to produce % shares and mean incomes for a given ventile for all countries
+plot_v <- function(ventile, v) {
+  ventile.dt = data.table(ventile)
   setkey(ventile.dt, ventile)
-  ventile.v = ventile.dt[ .(v), list(totpop, v_income = ventile_income_adj * pop), by = contcod ]
-  ventile.tot = ventile.dt[, list( tot_income = sum(ventile_income_adj * pop) ), by = contcod ]
+  ventile.v = ventile.dt[ .(v), list(totpop, v_income = ventile_income_adj * pop), by = list(contcod, continent) ]
+  ventile.tot = ventile.dt[, list( tot_income = sum(ventile_income_adj * pop) ), by = list(contcod)]
   ventile.v <- merge(ventile.v, ventile.tot, by = "contcod", all.x = TRUE)
   
   ventile.v$perc_share = ventile.v$v_income * 100 / ventile.v$tot_income
@@ -43,17 +38,34 @@ data_prep <- function(ventile.adj, v) {
 }
 ```
 
-Plot % income share of top ventile against average income
+
 ```{r}
-ventile.top5.mean = aggregate(avg_income ~ perc_share, mean, data = ventile.top5)
+# Plots for top 5%
+ventile.top5 = plot_v(ventile.adj, 20)
+# Plot % income share of top ventile against average income
 ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
   geom_point(alpha = 0.2) +
-  geom_smooth(aes(fill = "Trend"), color = "#56B4E9", se = FALSE) +
+  geom_smooth(aes(fill = "Trend"), color = "#009E73", se = FALSE) +
+  facet_wrap(~ continent) +
   ylab("Average income") +
   xlab("% income share") +
-  ggtitle("Income share of top 5% individuals by mean income of country") +
-  labs(subtitle = "N = 72") +
-  scale_fill_manual(name = "", values = c("Trend" = "#56B4E9")) +
+  ggtitle("Variation of mean incomes of countries by % share of income held by \nthe top 5% individuals in 111 countries") +
+  labs(subtitle = "N = 111") +
+  scale_fill_manual(name = "", values = c("Trend" = "#009E73")) +
+  theme(legend.position = "bottom")
+
+# Plots for bottom 5%
+ventile.bottom5 = plot_v(ventile.adj, 1)
+summary(ventile.bottom5)
+ggplot(ventile.bottom5, aes(x = perc_share, y = avg_income)) +
+  geom_point(alpha = 0.2) +
+  geom_smooth(aes(fill = "Trend"), color = "#E69F00", se = FALSE) +
+  # facet_wrap(~ continent) +
+  ylab("Average income \n(equivalent to 2012 USD)") +
+  xlab("% income share") +
+  ggtitle("Variation of mean country income by % share of income held by \nthe bottom 5% individuals in 111 countries") +
+  labs(subtitle = "N = 111") +
+  scale_fill_manual(name = "", values = c("Trend" = "#E69F00")) +
   theme(legend.position = "bottom")
 ```
 
