@@ -40,12 +40,14 @@ plot_v <- function(ventile, v) {
 
 
 ```{r}
+# NA
+
 # Plots for top 5%
 ventile.top5 = plot_v(ventile.adj, 20)
 # Plot % income share of top ventile against average income
 ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
   geom_point(alpha = 0.2) +
-  geom_smooth(aes(fill = "Trend"), color = "#009E73", se = FALSE) +
+  geom_smooth(method = "gam", aes(fill = "Trend"), color = "#009E73", se = FALSE) +
   facet_wrap(~ continent) +
   ylab("Average income") +
   xlab("% income share") +
@@ -56,10 +58,9 @@ ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
 
 # Plots for bottom 5%
 ventile.bottom5 = plot_v(ventile.adj, 1)
-summary(ventile.bottom5)
 ggplot(ventile.bottom5, aes(x = perc_share, y = avg_income)) +
   geom_point(alpha = 0.2) +
-  geom_smooth(aes(fill = "Trend"), color = "#E69F00", se = FALSE) +
+  geom_smooth(method = "gam", aes(fill = "Trend"), color = "#E69F00", se = FALSE) +
   # facet_wrap(~ continent) +
   ylab("Average income \n(equivalent to 2012 USD)") +
   xlab("% income share") +
