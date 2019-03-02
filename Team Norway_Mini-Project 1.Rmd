@@ -13,6 +13,7 @@ library(tidyverse)
 library(foreign)
 library(data.table)
 library(broom)
+cb_palette = c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 ```
 
 # Correlation between mean income and percentage share of income earned by the top 5% segment
@@ -46,34 +47,45 @@ plot_v <- function(ventile, v) {
 }
 ```
 
+```{r}
+ggplot(ventile.top5, aes(x = avg_income, y = perc_share)) +
+  theme_bw() +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_log10() +
+  ylab("% income share of top ventile") +
+  xlab("Mean income of country \n(equivalent to 2012 USD)") +
+  ggtitle("Percentage income share of top ventile vs. mean income of country") +
+  labs(caption = "Data by Branko Milanovic of the Stone Center")
+```
 
 ```{r}
 # Plots for top 5%
 ventile.top5 = plot_v(ventile.adj, 20)
 
-ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
-  geom_point(alpha = 0.2) +
-  geom_smooth(method = "lm", aes(fill = "Trend"), color = "#009E73", se = FALSE) +
-  facet_wrap(~ continent) +
-  ylab("Mean income \n(equivalent to 2012 USD)") +
-  xlab("% income share") +
-  ggtitle("Variation of mean incomes of countries by %age share of income \nheld by the top 5% individuals") +
-  labs(subtitle = "Based upon data maintained by Branko Milanovic of the Stone Center on \nSocioEconomic Inequality for 111 countries") +
-  scale_fill_manual(name = "", values = c("Trend" = "#009E73")) +
-  theme(legend.position = "right")
+ggplot(filter(ventile.top5, continent != "Oceania"), aes(x = avg_income, y = perc_share, group = continent, color = continent)) +
+  theme_bw() +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_log10() +
+  ylab("% income share of top ventile") +
+  xlab("Mean income of country \n(equivalent to 2012 USD)") +
+  ggtitle("Percentage income share of top ventile vs. mean income of country by continent") +
+  labs(subtitle = "Excludes Oceania", caption = "Data by Branko Milanovic of the Stone Center", color = "Continent") +
+  scale_color_manual(values = cb_palette)
 ```
 
 ```{r}
-ggplot(ventile.top5, aes(x = perc_share, y = avg_income)) +
-  geom_point(alpha = 0.2) +
-  geom_smooth(method = "lm", aes(fill = "Trend"), color = "#009E73", se = FALSE) +
-  facet_wrap(~ dev) +
-  ylab("Mean income \n(equivalent to 2012 USD)") +
-  xlab("% income share") +
-  ggtitle("Variation of mean incomes of countries by %age share of income \nheld by the top 5% individuals") +
-  labs(subtitle = "Based upon data maintained by Branko Milanovic of the Stone Center on \nSocioEconomic Inequality for 111 countries") +
-  scale_fill_manual(name = "", values = c("Trend" = "#009E73")) +
-  theme(legend.position = "right")
+ggplot(ventile.top5, aes(x = avg_income, y = perc_share, group = dev, color = dev)) +
+  theme_bw() +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_log10() +
+  ylab("% income share of top ventile") +
+  xlab("Mean income of country \n(equivalent to 2012 USD)") +
+  ggtitle("Percentage income share of top ventile vs. mean income \nof country by development") +
+  labs(caption = "Data by Branko Milanovic of the Stone Center", color = "Development") +
+  scale_color_manual(values = cb_palette)
 ```
 
 
@@ -82,17 +94,18 @@ do tend to decrease as the %age share of income held by the top 5% segment incre
 
 ```{r}
 # Plot residuals for top 5%
-ventile.top5.lm = lm(avg_income ~ perc_share*dev, data = ventile.top5)
+ventile.top5.lm = lm(perc_share ~ avg_income * dev, data = ventile.top5)
 ventile.top5.lm.df = augment(ventile.top5.lm)
 
-ggplot(ventile.top5.lm.df, aes(x = perc_share, y = .resid)) +
-  geom_point(alpha = 0.1) +
-  geom_smooth(aes(fill = "Trend"), color = "#009E73", se = TRUE) +
-  facet_wrap(~ dev) +
+ggplot(ventile.top5.lm.df, aes(x = avg_income, y = .resid)) +
+  theme_bw() +
+  scale_x_log10() +
+  geom_point(alpha = 0.25) +
+  geom_smooth() +
+  facet_wrap(~ dev, ncol = 1) +
   ylab("Residuals") +
-  ggtitle("Residual Plots") +
-  scale_fill_manual(name = "", values = c("Trend" = "#009E73")) +
-  theme(legend.position = "right")
+  xlab("Mean income of country \n(equivalent to 2012 USD)") +
+  ggtitle("Residual Plots")
 ```
 
 # Correlation between mean income and percentage share of income earned by the bottom 5% segment
@@ -101,32 +114,32 @@ ggplot(ventile.top5.lm.df, aes(x = perc_share, y = .resid)) +
 # Plots for bottom 5%
 ventile.bottom5 = plot_v(ventile.adj, 1)
 
-ggplot(ventile.bottom5, aes(x = perc_share, y = avg_income)) +
-  geom_point(alpha = 0.2) +
-  geom_smooth(method = "lm", aes(fill = "Trend"), color = "#E69F00", se = FALSE) +
-  facet_wrap(~ dev) +
-  ylab("Mean income \n(equivalent to 2012 USD)") +
-  xlab("% income share") +
-  ggtitle("Variation of mean incomes of countries by %age share of income \nheld by the bottom 5% individuals") +
-  labs(subtitle = "Based upon data maintained by Branko Milanovic of the Stone Center on \nSocioEconomic Inequality for 111 countries") +
-  scale_fill_manual(name = "", values = c("Trend" = "#E69F00")) +
-  theme(legend.position = "right")
+ggplot(ventile.bottom5, aes(x = avg_income, y = perc_share, group = dev, color = dev)) +
+  theme_bw() +
+  geom_point(alpha = 0.25) +
+  geom_smooth(method = "lm", se = FALSE) +
+  scale_x_log10() +
+  ylab("% income share of bottom ventile") +
+  xlab("Mean income of country \n(equivalent to 2012 USD)") +
+  ggtitle("Percentage income share of bottom ventile vs. mean income \nof country by development") +
+  labs(caption = "Data by Branko Milanovic of the Stone Center", color = "Development") +
+  scale_color_manual(values = cb_palette)
 ```
 
 Shares of incomes of the bottom 5% individuals have no effect whatsoever on the mean incomes of countries.
 
-
 ```{r}
 # Plot residuals for bottom 5%
-ventile.bottom5.lm = lm(avg_income ~ perc_share*dev, data = ventile.bottom5)
+ventile.bottom5.lm = lm(perc_share ~ avg_income * dev, data = ventile.top5)
 ventile.bottom5.lm.df = augment(ventile.bottom5.lm)
 
-ggplot(ventile.bottom5.lm.df, aes(x = perc_share, y = .resid)) +
-  geom_point(alpha = 0.1) +
-  geom_smooth(aes(fill = "Trend"), color = "#E69F00") +
-  facet_wrap(~ dev) +
+ggplot(ventile.bottom5.lm.df, aes(x = avg_income, y = .resid)) +
+  theme_bw() +
+  scale_x_log10() +
+  geom_point(alpha = 0.25) +
+  geom_smooth() +
+  facet_wrap(~ dev, ncol = 1) +
   ylab("Residuals") +
-  ggtitle("Residual Plots") +
-  scale_fill_manual(name = "", values = c("Trend" = "#E69F00")) +
-  theme(legend.position = "right")
+  xlab("Mean income of country \n(equivalent to 2012 USD)") +
+  ggtitle("Residual Plots")
 ```
